@@ -1,0 +1,6 @@
+[project]
+name = "ga4-agent"
+version = "0.1.0"
+
+[tool.setuptools]
+packages = ["core", "agents", "ingestion", "orchestrator", "ui", "utils"]

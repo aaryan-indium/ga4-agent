@@ -1,0 +1,29 @@
+# Google Play Store review scraping
+google-play-scraper==1.2.7
+
+# Local LLM inference via Ollama REST API
+ollama==0.4.7
+
+# system memory monitoring
+psutil>=5.9.0
+
+# Web UI framework for the dashboard
+streamlit==1.42.2
+
+# Load environment variables from .env files
+python-dotenv==1.1.0
+
+# Data manipulation and tabular analysis
+pandas==2.2.3
+
+# HTTP requests (used by scraper and Ollama fallback)
+requests==2.32.3
+
+# Markdown rendering support in briefings
+markdown==3.7
+
+# Date/time utilities for review timestamps
+python-dateutil==2.9.0.post0
+
+# Data visualization in Streamlit dashboard
+plotly==6.0.1

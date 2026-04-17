@@ -1,0 +1,34 @@
+# Environment
+.env
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Data
+data/*.db
+data/*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Auto-generated packaging metadata
+ga4_agent.egg-info/
+
+# Runtime logs
+logs/
+
+_last_briefing.txt
+_*.txt

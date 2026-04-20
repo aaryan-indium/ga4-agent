@@ -1,15 +1,4 @@
-"""Centralised logging — consistent formatting across all modules.
-
-Provides a single factory function that returns a named logger writing to
-both the console and a persistent log file (logs/app.log).  Calling
-get_logger() multiple times with the same name returns the same logger
-instance with no duplicate handlers.
-
-Usage:
-    from utils.logger import get_logger
-    logger = get_logger(__name__)
-    logger.info("Scraped %d reviews", count)
-"""
+"""Centralised logging — consistent formatting across all modules."""
 
 from __future__ import annotations
 

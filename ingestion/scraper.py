@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
+from core.database import get_existing_review_ids
 from core.config import SCRAPE_APP_ID, SCRAPE_REVIEW_COUNT
 from utils.logger import get_logger
 
@@ -23,30 +24,101 @@ logger = get_logger("scraper")
 # ══════════════════════════════════════════════════════════════════
 
 def scrape_from_play_store() -> list[dict]:
-    """Scrape reviews from Google Play, balanced across all 5 star ratings."""
+    """Scrape new unique reviews from Google Play, balanced across all 5 star ratings.
+
+    This function paginates per star rating and filters out review IDs that are
+    already present in the local database.
+    """
     from google_play_scraper import Sort, reviews as gp_reviews
 
     collected: list[dict] = []
-    per_rating: int = SCRAPE_REVIEW_COUNT // 5
+    base_per_rating: int = SCRAPE_REVIEW_COUNT // 5
+    remainder: int = SCRAPE_REVIEW_COUNT % 5
+    per_rating_targets: dict[int, int] = {
+        star: base_per_rating + (1 if star <= remainder else 0)
+        for star in range(1, 6)
+    }
+    max_pages_per_star: int = 12
 
     for star in range(1, 6):
+        target_for_star: int = per_rating_targets[star]
+        if target_for_star <= 0:
+            continue
+
+        continuation_token = None
+        star_unique: list[dict] = []
+        seen_this_star: set[str] = set()
+
         try:
-            logger.info("Fetching %d reviews for %d-star from %s", per_rating, star, SCRAPE_APP_ID)
-            result, _ = gp_reviews(
+            logger.info(
+                "Fetching up to %d new reviews for %d-star from %s",
+                target_for_star,
+                star,
                 SCRAPE_APP_ID,
-                lang="en",
-                country="us",
-                sort=Sort.NEWEST,
-                count=per_rating,
-                filter_score_with=star,
             )
-            for raw in result:
-                collected.append(_map_play_review(raw))
-            logger.info("Got %d reviews for %d-star", len(result), star)
+
+            for page_num in range(1, max_pages_per_star + 1):
+                needed: int = target_for_star - len(star_unique)
+                if needed <= 0:
+                    break
+
+                request_count: int = min(100, max(20, needed))
+                result, continuation_token = gp_reviews(
+                    SCRAPE_APP_ID,
+                    lang="en",
+                    country="us",
+                    sort=Sort.NEWEST,
+                    count=request_count,
+                    filter_score_with=star,
+                    continuation_token=continuation_token,
+                )
+
+                if not result:
+                    break
+
+                mapped_page: list[dict] = [_map_play_review(raw) for raw in result]
+                candidate_ids: list[str] = [
+                    review["review_id"]
+                    for review in mapped_page
+                    if review["review_id"] not in seen_this_star
+                ]
+                existing_ids: set[str] = get_existing_review_ids(candidate_ids)
+
+                added_in_page: int = 0
+                for review in mapped_page:
+                    review_id: str = review["review_id"]
+                    if review_id in seen_this_star or review_id in existing_ids:
+                        continue
+                    seen_this_star.add(review_id)
+                    star_unique.append(review)
+                    added_in_page += 1
+                    if len(star_unique) >= target_for_star:
+                        break
+
+                logger.info(
+                    "Star %d page %d: fetched=%d, added_new=%d, progress=%d/%d",
+                    star,
+                    page_num,
+                    len(result),
+                    added_in_page,
+                    len(star_unique),
+                    target_for_star,
+                )
+
+                if continuation_token is None:
+                    break
+
+            collected.extend(star_unique)
+            logger.info(
+                "Collected %d new unique reviews for %d-star (target=%d)",
+                len(star_unique),
+                star,
+                target_for_star,
+            )
         except Exception as exc:
             logger.error("Error fetching %d-star reviews: %s", star, exc)
 
-    logger.info("Total scraped: %d reviews", len(collected))
+    logger.info("Total new unique scraped: %d reviews (target=%d)", len(collected), SCRAPE_REVIEW_COUNT)
     return collected
 
 

@@ -1,6 +1,6 @@
 # Player Feedback Intelligence System
 
-This capstone project ingests mobile game player reviews, runs them through a 3-agent AI pipeline, and produces a daily briefing for a non-technical Game Producer. It is built in Python 3.11+ with Ollama running locally (default: `mistral:7b`, configurable in `.env`), uses SQLite for storage (no external database), and provides a Streamlit UI. Review ingestion supports Google Play scraping through `google-play-scraper` for app ID `com.activision.callofduty.shooter` (CoD Mobile) and JSON upload. Hardware tested: AMD Ryzen 7 5800U, 16GB RAM, CPU-only.
+This capstone project ingests mobile game player reviews, runs them through a 3-agent AI pipeline, and produces a daily briefing for a non-technical Game Producer. It is built in Python 3.11+ with Ollama running locally (default: `gemma2:2b`, configurable in `.env`), uses SQLite for storage (no external database), and provides a Streamlit UI. Review ingestion supports Google Play scraping through `google-play-scraper` for app ID `com.activision.callofduty.shooter` (CoD Mobile) and JSON upload. Hardware tested: AMD Ryzen 7 5800U, 16GB RAM, CPU-only.
 
 ## Setup Instructions
 
@@ -47,7 +47,7 @@ Set these exact keys in `.env`:
 6. Pull the local model:
 
 ```bash
-ollama pull mistral:7b
+ollama pull gemma2:2b
 ```
 
 7. Verify Ollama and model setup:

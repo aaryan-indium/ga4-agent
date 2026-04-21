@@ -2,7 +2,6 @@
 """
 
 from __future__ import annotations
-
 import sqlite3                        # Python's built-in library to talk to SQLite databases
 from datetime import datetime         # Used to stamp the exact time a briefing was saved
 from pathlib import Path              # Treats file paths as objects instead of raw strings

@@ -27,12 +27,18 @@ class BaseAgent:
         """Initialise the agent with model name, host, logger, and client."""
         self.model: str = model
         self.host: str = host
+        # Logger scoped by subclass name (e.g. "SentimentAgent", "PatternAgent")
+        # allows caller to trace which agent produced each log message.
         self.logger = get_logger(self.__class__.__name__)
         self.client: ollama.Client = ollama.Client(host=self.host)
         self.logger.info("Initialised %s with model=%s", self.__class__.__name__, self.model)
 
     def _call_ollama(self, system_prompt: str, user_message: str) -> str:
-        """Send a system + user message to Ollama and return the response text."""
+        """Send a system + user message to Ollama and return the response text.
+        
+        System prompt establishes agent behavior/role (e.g. 'You are a sentiment classifier').
+        User message contains the actual task input (e.g. batch of reviews to classify).
+        """
         try:
             response = self.client.chat(
                 model=self.model,
@@ -55,8 +61,10 @@ class BaseAgent:
         """Parse and validate JSON returned by an LLM response."""
         cleaned: str = raw.strip()
 
-        # Strip markdown code fences (```json ... ``` or ``` ... ```)
+        # Strip markdown code fences that LLMs sometimes add around JSON.
+        # Pattern 1: removes opening fence (e.g. ``` or ```json or ```json\n)
         cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        # Pattern 2: removes closing fence (e.g. \n``` or ``` )
         cleaned = re.sub(r"\s*```$", "", cleaned)
         cleaned = cleaned.strip()
 
@@ -71,13 +79,20 @@ class BaseAgent:
             )
 
         if expected_count is not None:
+            # Sanity check: verify caller is trying to count-validate a list, not a scalar/dict.
             if not isinstance(result, list):
                 raise ValueError("expected_count is only valid for JSON arrays")
+            # Enforce exact match: e.g. batch of N reviews should yield exactly N classifications.
             if len(result) != expected_count:
                 raise ValueError(f"Expected {expected_count} items, got {len(result)}")
 
         return result
 
     def run(self, input_data: Any) -> Any:
-        """Execute the agent's core logic — must be overridden by subclasses."""
+        """Execute the agent's core logic — must be overridden by subclasses.
+        
+        Raising NotImplementedError here enforces the contract that every subclass
+        (SentimentAgent, PatternAgent, BriefingAgent) must provide its own concrete
+        run() method with domain-specific behavior.
+        """
         raise NotImplementedError("Subclasses must implement run()")
